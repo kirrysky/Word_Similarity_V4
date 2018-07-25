@@ -1,0 +1,323 @@
+papers方法汇总
+
+1.中文论文
+  1.基于《知网》的词汇语义相似度计算
+    Resource:《知网》
+      义原和符号
+        义原：
+          ===================基本义原============
+          Event|事件
+          entity|实体
+          attribute|属性值
+          aValue|属性值
+          quantity|数量
+          qValue|数量值
+          SecondaryFeature|次要特征
+          ===================语法义原============
+          syntax|语法
+          ===================关系义原============
+          EventRole|动态角色
+          EventFeature|动态属性
+        符号：
+          逻辑符号：.~^
+          关系符号：#%￥*+&@？！
+          特殊符号：{}()[]
+      实词和虚词：
+        虚词：用"{句法义原}"或"{关系义原}"进行描述
+        实词：1.第一基本义原描述：基本义原a
+             2.其他基本义原描述：{基本义原b,基本义原c...}
+             3.关系义原描述："关系义原=基本义原"，"关系义原=(具体词)"或者"(关系义原=具体词)"来描述
+             4.关系符号描述：用"关系符号 基本义原"或者"关系符号(具体词)"加以描述
+    Method:
+      层次结构的基本计算公式：
+        sim(w1,w2)=α/(Dis(w2,w2)+α)
+        α的含义:当相似度为0.5时的词语距离值
+        其他的因素:概念层次树的深度、概念层次树的区域密度
+      词与词之间的之间的相关度：
+        词的相关度就是
+        sim(w1,w2)=max(sim(s1i,s2j))
+                  i=1...n,j=1...m
+                  s1i和s2j为概念1和概念2
+      义原之间的相关度：
+        义原与义原:
+          sim(p1,p2)=α/(d+α)
+          p1和p2为两个义原，d为义原层次体系中的路径长度，α为可调节参数
+        义原与具体词:
+          一律处理为一个比较小的常数y
+        具体词和具体词:
+          相同为1，不同的为0
+      虚词和实词在有义原的情况下的计算方法：
+        虚词：计算{句法义原}or{关系义原}的相似度
+        实词：sim(s1,s2)=Σβi*∏simi(s1,s2)
+             连加从1-4，连乘从1到i
+             β1+β2+β3+β4=1 β1>=β2>=β3>=β4
+              第一基本义原：两个义原之间的相似度
+              其他基本义原：值为一个集合，转换为两个基本义原集合的相似度计算
+                         （一一对应的比较关系,非空值VS空值=6（西格玛不是六））
+      参数：α=1.6
+           β1=0.5 β2=0.2 β3=0.17 β4=0.13
+           y=0.2 6=0.2
+  =====================================================================
+  2.基于路径和深度的同义词词林词语相似度
+    Resource：《哈工大同义词词林》
+      6层树状结构，上4层抽象的类别，最底层的叶子结节
+      1~3：名词 4：数词&量词  5：形容词 6~10：动词 11：虚词 12：难以划分的词
+      =代表相等、同义，#代表不等、同类，@代表自我封闭、独立
+    Method:
+      [Dekang Lin]总的纲领:
+        sim(A,B)=log(common(A,B))/log(description(A,B))
+        分子：A\B共性所需的信息量的大小
+        分母：完整描述A\B所需的信息量的大小
+      [Wu的方法]:
+        sim(s1,s2)=2H/(2H+N1+N2)
+        N1\N2代表S1\S2到他们最近的公共父结点的路径距离
+        H代表义项S1和S2最近公共父结点到根结点的距离、即深度
+      [Hao的方法]:
+        sim(s1,s2)=(1-d/(d+h+β))*(h/(d+h/2+α))
+        （1-他们不同的）*他们相同的
+        d表示两个词语义项之间的路径距离
+        h表示它们最近公共父结点的深度
+        α=0，β=1
+      [Liu的方法]:
+        sim(s1,s2)=α*d/(α*d+β*l)
+        l为词语义项S1和S2的最短路径
+        d是最近公共父结点的深度
+        α和β是平滑参数，α=0.5，β=0.55
+      [田永乐的方法]（这个方法一开始就被DISS到起飞）:
+        sim(S1,S2)=init(s1,s2)*cos(n*π/180)((n-k+1)/n)
+        init是相似度的初始函数，其自变量为义项s1和s2之间的最短路径
+      [本文的方法]
+        sim(s1,s2)=(Depth(LCP(s1,s2))+α)/(Depth(LCP(s1,s2))+α+Path(s1,s2)+β)
+        都在"="后面的时候，相似度处理为1，都在"#"后面的时候，相似度处理为0.5
+        ***************改善点在这里********************
+        边权重，每条边是不同的Weight:W1~W5 W5=8,W4=6,W3=4,W2=1.5,W1=0.5
+        α(α∈[0,1])：根节点的深度 α=0.9
+        β=K/N*Weight(i)
+        K为两个义项在最近的公共父结点中的分支间距，N为最近公共父结点的总孩子数
+  =====================================================================
+  3.基于信息内容的词林词语相似度计算
+    Method:
+      几种方法：
+        1.基于路径的相似度计算方法
+        2.基于信息内容的相似度计算
+          两个概念及其最近公共父结点在本体中信息内容的含量
+        3.基于特征的相似度计算
+          词语的词性、所属类别
+        4.利用本体中词语的注释来计算词语之间的相似度，其主要的计算方法是量化两个概念之
+          间注释的重叠内容
+      基于信息内容的相似度计算方法:
+      [Resnik]:
+        simResnik(c1,c2)=IC(LSC(C1,C2))
+        LSC这个函数表示C1和C2的最近的公共结点，IC表示该概念中信息内容含量
+        ICResnik(C)=-logP(C) 概念C在测量样本中的或然率
+      [Seco]:
+        ICseco(C)=1-((log(hypo(c))+1)/log(maxnodes))
+        hypo(C)是所要计算的概念在本体中的下位个数（总）
+        maxnodes为本体中的节点总数
+      [Jiang]:两个概念差异越大，它们的相似度就会越小
+        disJC(c1,c2)=IC(c1)+IC(c2)-2IC(LCS(c1,c2))
+        simLin(c1,c2)=(2IC(LSC(c1,c2)))/(IC(c1)+IC(c2))
+        分子是c1和c2的共性，分母是能将c1和c2描述出来的信息
+      [Meng]:
+        simMeng(c1,c2)=e**simLin(c1,c2)-1
+      本文方法:
+        1.完全相同的两个概念或同义词:差异性最小，记为MinDIFF
+        2.差异性最大的两个概念，处于本体边缘的两个叶子概念，且这两个概念的
+          最近的公共父节点为整个分类树的根节点 MaxDIFF
+          IC(叶子)=1-(log(1)/log(maxnodes))=1
+          IC(根)=1-(log(maxnodes+1)/log(maxnodes))=0
+          MaxDIFF=IC(叶子)+IC(叶子)-2IC(根)=2
+          sim(c1,c2)=(MaxDIFF-dis(C1,C2))/(MaxDIFF-MinDIFF)
+    Resource:
+      改进版词林
+        将词林中具有抽象的原子词群或概念提取到更高的分类节点
+  =====================================================================
+  4.基于知网和词林的词语语义相似度计算
+    Method:
+      For知网：
+        义原计算的改进
+          dis(s1,s2)=Σweight(level(k))
+          weight(i)=((m-1-i)/(m-1))*(1+sin(θ*i*π/180))
+          m为树的层次(知网m=14)，θ为和层高成反比例的调节参数，θ=4
+          i为一个正整数，代表节点的层次编号
+      For词林:
+        W1+W2+W3+W4<=10 W1=0.5,W2=1,W3=2.5,W4=2.5 d=1,3,8,13,18
+        sim(C1,C2)=(1.05-0.05*dis(C1,C2))*(根号e**(k/2n))
+      综合2种方法:
+        知网相似度s1,词林相似度s2,分别赋予权重 入1,入2, 入1+入2=1
+        Resource:
+          I为不属于知网也不属于词林
+          A属于知网但不属于词林
+          B属于词林但不属于知网
+          C属于知网又属于词林
+        Method:
+          1.当W1∈C,W2∈C,同时使用知网和词林分别计算W1和W2相似度
+            本文 入1=0.5，入2=0.5
+          2.当W1∈A,W2∈A或者W1∈B,W2∈B，单独对W1和W2进行基于知网
+          或者基于词林的相似度计算，记作s1或者s2，此时 入1和入2一个为1或者一个为0
+          3.W1∈A，W2∈B，在词林中查找W2的同义词集合，依次与W1进行基于知网的相似度计算
+            取其中的最大值作为两个词语的相似度，记作s1,如果W2在词林里没有同义词，则取
+            s1=0.2，此时取入1=1，入2=0
+          4.当W1∈A，W2∈C时，首先对W1和W2进行基于知网的相似度计算，结果记作s1,然后在
+            然后在词林中查找W2的同义词集合，依次与W1进行基于知网的相似度计算，取其中
+            最大值作为S2,如果W2在词林中无同义词，则取S2=S1,此时要求 入1>入2
+            本文实验中 入1=0.6，入2=0.4
+          5.当W1∈B,W2∈C,首先对W1和W2进行基于词林的相似度计算，结果记作s2，然后在词林
+            中词林中查找W1的同义词集合，依次与W2进行基于知网的相似度计算，取其中的最大值
+            作为s1，如果W1在词林中无同义词，则取s1=s2，此时要求入2>入1，本文实验中取
+            入1=0.4，入2=0.6
+  =====================================================================
+  5.基于抽象概念的知网词语相似度计算
+    通过义项语义表达式中的抽象概念，将所有的义项全部都挂到义原树上，形成一棵包含所有概念的
+    的义项树，采用一种基于深度和路径的方法直接计算义项的相似度
+    Resource:
+      概念：
+        将第一独立义原作为它的直接上位(父结点),将其他义原均转换成描述逻辑表示的义项定义
+        exp.保镖==人∩(某种)相关概念,职位∩(某种)施事,保护
+
+    Method:
+      [Wu]:
+        sim(w1,w2)=2H/2H+N1+N2
+        N1,N2分别表示词语W1和W2到它们最近公共父结点的路径距离，H表示词语W1和W2最近公共父结点
+        的路径距离，H表示词语W1和W2最近公共父结点在本体中的深度
+      [本文方法]:
+        总的公式：
+          InitSim(s1,s2)=Depth(LCP(s1,s2))/(Depth(LCP(s1,s2))+Path(s1,s2))
+          FinalSim(s1,s2)=InitSim(s1,s2)*cos(1-InitSim(s1,s2)*π/2)
+          这是为了减少加一个根节点所带来的误差，根节点的相似度取值为0.01
+        Path(s1,s2):
+          Path(s1,s2)=path(FS(s1),FS(s2))+AbstComp(s1,s2)
+          1.FS(s1)表示义项的第一独立义原，path(FS(s1),FS(s2))表示两个第一独立义原的最短路径距离
+          其值等于该最短路径边的条数
+          2.AbstComp(s1,s2)表示基于抽象概念的路径补偿
+            AbstComp(s1,s2)=(1/(SameAbs(s1,s2)+1))+Sum(SS)*α+Sum(OS)*β
+            Sum(SS)表示两个义项的不相同的符号义原与关系义原的个数之和
+            Sum(OS)表示两个义项的不相同的其他独立义原的个数之和
+            (SameAbs(s1,s2)表示义项s1和s2定义中相同的概念结点个数，(1/(SameAbs(s1,s2)+1))
+              1.计算两个义原概念的相似度的时候，基于抽象概念的路径补偿取0
+              2.计算义原和义项的概念之间的相似度的时候，我们只取一般的路径初始补偿1/2
+        Depth(LCP(s1,s2)):
+          1.如果两个义项的第一独立义原相同的时候，且存在相同的抽象概念，则我们将最后相同的抽象概念定义
+          为义项间的最近公共父结点
+          Depth(LCP(s1,s2))=Depth(SameFS)+SameSum(SS)*α+Same(OS)*β
+          2.第一独立义原相同，但不存在相同的抽象概念
+          相同的第一独立义原定义成义项间的最近公共父结点
+          其深度等于该独立义原在义项树
+          3.如果两个义项无相同成分，则分别按两个义项定义中的第一独立义原，在义项树上向上查找最近公共父结点
+          直到根结点为止
+        Other在计算中的处理:
+          1.如果第一独立义原与被定义的概念不相同，则被定义的概念为义项，其定义表达暂不处理
+            第一独立义原与被定义的概念相同，则被定义的概念为义原，其定义表达处理为空
+          *2.当待比较的两个义项定义的第一独立义原相同或者其中一个义项定义中的第一独立义原和另一个义项定义的
+            其他独立义原相同时，重新将义原进行排序
+          *3.两个义项定义的第一独立义原不同，但存在一个义项定义中的其他独立关系义原，或者符号义原与另一个义项
+            的第一独立义原相同的时候，处理成省略相同义原后面所有其他义原
+          以上处理仅是临时性的，当计算完义项相似度后又恢复其原状
+        α=1，β=1
+  =====================================================================
+  6.基于多重继承与信息内容的知网词语相似度计算
+    总论：
+      通过抽取抽象概念构建由义原和抽象概念组成的义项树，并把所有义项链接为义项树的叶子节点而形成一棵
+      具有多重继承特征的义项网
+    Resouce:
+      实概念:义项和义原称为实概念
+      虚(抽象概念):非独立义原通过∩运算组成的概念称为“抽象概念”
+    Method:
+    [Zhou J]:
+      ICzhou(C)=k*(1-(log(hypo(c))+1)/log(max_nodes))+(1-k)*(log(depth(c))/log(max_depth))
+      k=0.5
+    本文方法：
+      构成基于义原树的义项网的具体的计算步骤为：
+        a.对每一个义项的语义表达式进行交并处理：把义项的每一个独立义原与其后的所有紧接的非独立义原通过交运算
+        结合为抽象概念，然后将每一个抽象概念或独立义原通过并运算形成义项的蕴含公理定义
+        b.遍历所有的义项蕴含公理，找出无任何约束的单一独立义原，作为义项的一个直接上位，在义原树种，直接将义
+        项挂在该独立义原下
+        c.遍历所有的义项蕴含公理，找出带有一个约束条件的抽象概念，然后在义原树种，将该抽象概念挂在其所包含的
+        独立义原下，义项挂在该抽象概念下，此时，N=1
+        d.重复步骤c.置N=N+1，遍历所有的义项蕴含公理，找出带有N个约束条件的抽象概念，然后判断减少一个约束条件
+        的抽象概念是否存在义项网中，义项挂在抽象概念下，否则进一步减少一个约束条件，并作相同的判断和处理，直到
+        无任何约束的独立义原
+        e.重复步骤d，直到将所有义项蕴含公理中的抽象概念挂到基于义原树的义项网中，同时将义项挂在其蕴含公理中的
+        所有抽象概念下，形成义项的多重继承
+      计算Sim的方法：
+        ICzhang(c)=k*(1-(log(hypo(c))+1)/log(max_nodes))+(1-k)*(depth(c)/max_depth)
+2.英文论文
+  1.NLP3 Chapter 17 Computing with Word Senses
+    The Lesk Algorithm:
+      choose the sense whose dictionary gloss or definition shares the
+      most words with the target word's neighborhood.
+      在计算Word Sense Disambiguation和Similarity都可以用到的方法
+      可能可以在HowNet中用到
+      #####################################################################
+      function SIMPLIFIED LESK(word, sentence) returns best sense of word
+
+        best-sense <- most frequent sense for word
+        max-overlap <- 0
+        context <- set of words in sentence
+
+        for each sense in senses of word do
+          signature <- set of words in the gloss and examples of sense
+          overlap <- COMPUTE_OVERLAP(signature, context)
+          if overlap > max-overlap then
+            max-overlap <- overlap
+            best-sense <- sense
+
+        end
+        return (best-sense)
+      #####################################################################
+    Word Similarity: Thesaurus Methods
+      方法原理: most similar to itself, then to its parents or siblings, and least
+      similar to words that are far away
+      [Resnik: Information- content word similarity]:
+        P(c): a random selected word in a corpus is an instance of concept(c)
+        P(C)=Σ(（w∈words(c))count(w))/N
+        words(c):set of words subsumed by concept c
+        N: the total number of words in the corpus that are also present in the Thesaurus
+          IC(c)=-log(P(c))
+          simResnik(c1,c2)=logP(LCS(c1,c2))
+      [Lin]:
+        simLin(A,B)=common(A,B)/description(A,B)
+        simLin(c1,c2)=2*logP(LCS(c1,c2))/（logP(c1)+logP(c2)）
+      [Jiang]:
+        distJC(c1,c2)=2*logP(LCS(c1,c2))-(logP(c1)+logP(c2))
+    Extended gloss Overlap:
+      For each n-word phrase that occurs in both glosses, Extended Lesk adds in a
+      score of n**2
+
+      similarity(A,B)=overlap(gloss(A),gloss(B))+overlap(gloss(A),gloss(hypo(B)))
+                      +overlap(gloss(A),gloss(hypo(B)))
+                      +overlap(gloss(hypo(A)),gloss(hypo(B)))
+  =====================================================================
+  2.Budanitsky+Hirst-2006
+    [Sussna's Depth-relative Scaling]:
+      起因:兄弟节点比父节点更为相关
+      每条连线的关系不同，有hypernymy,hyponymy,holonymy,meronymy
+      minr=1, maxr=2
+      wt(c1->r)=maxr-((maxr-minr)/edges(c1))
+      dist(c1,c2)=wt(c1->r1)+wt(c2->r')/2*max{depth(c1),depth(c2)}
+      average direction of the edges, scaled by the depth of nodes
+      r为relation that holds between c1 and c2,选择的是两者之间最短的距离
+    [Wu and Palmer's Conceptual Similarity]:
+      simWP(c1,c2)=(2*depth(lso(c1,c2)))/(len(c1,lso(c1,c2))+len(c2,lso(c1,c2))+2*depth(lso(c1,c2)))
+      distWP(c1,c2)=1-simWP(c1,c2)
+                   =(len(c1,lso(c1,c2))+len(c2,lso(c1,c2)))/(len(c1,lso(c1,c2))+len(c2,lso(c1,c2))+2*depth(lso(c1,c2)))
+    *[Leacock and Chodorow's Normalized Path Length]:
+      simLC(c1,c2)=-log(len(c1,c2)/2*max(depth(c)))
+      c∈WordNet
+      分母 maximum depth of the hierarchy
+    [Resnik'S Information Approach]:
+      p(c):probability of encountering an instance of concept c
+      IC(c)=-logP(c)
+      simR(c1,c2)=-logP(lso(c1,c2))
+    *[Jiang and Conrath's Combined Approach]:
+      distJC(c,par(c))=-logp(c|par(c))
+      p(c|par(c))=p(c)/p(par(c))
+      distJC(c,par(c))=IC(c)-IC(par(c))
+      distJC(c1,c2)=IC(c1)+IC(c2)-2*IC(lso(c1,c2))
+                   =2logP(lso(c1,c2))-(logP(c1)+logP(c2))
+    [Lin's Universal Similarity Measure]:
+      simL(A,B)=logP(common(A,B))/logP(description(A,B))
+      simL(c1,c2)=2*logP(lso(c1,c2))/(logP(c1)+logP(c2))
+  =====================================================================
+  3.Roget's Thesaurus and Semantic Similarity
+    傻逼方法不说了
